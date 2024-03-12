@@ -6,10 +6,30 @@ import {
   View,
   TextInput,
   Button,
+  ActivityIndicator,
 } from "react-native";
 import { Link } from "expo-router";
 import FoodListItem from "../components/FoodListItem";
 import { useState } from "react";
+import { gql, useQuery } from "@apollo/client";
+
+const query = gql`
+query search($ingr: String) {
+  search(ingr: $ingr) {
+    text
+    hints {
+      food {
+        brand
+        nutrients {
+          ENERC_KCAL
+        }
+        label
+        foodId
+      }
+    }
+  }
+}
+`;
 
 const foodItems = [
   { label: "Pizza", cal: 700, brand: "Dominos" },
@@ -21,10 +41,24 @@ const foodItems = [
 export default function App() {
   const [search, setSearch] = useState("");
 
+  const { data, loading, error } = useQuery(query, {
+    variables: { ingr: "pizza" },
+  });
+
   const performSearch = () => {
     console.warn("Searching for:", search);
     setSearch("");
   };
+
+  if (loading) {
+    return <ActivityIndicator />
+  }
+
+  if (error) {
+    return <Text>Failed to search</Text>
+  }
+
+  console.log(JSON.stringify(data));
 
   return (
     <View style={styles.container}>
@@ -37,7 +71,7 @@ export default function App() {
       {search && <Button title="Search" onPress={performSearch} />}
 
       <FlatList
-        data={foodItems}
+        data={data.search.hints}
         renderItem={({ item }) => <FoodListItem item={item} />}
         contentContainerStyle={{ gap: 5 }}
       />
