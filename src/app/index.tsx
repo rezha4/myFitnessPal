@@ -11,7 +11,7 @@ import {
 import { Link } from "expo-router";
 import FoodListItem from "../components/FoodListItem";
 import { useState } from "react";
-import { gql, useQuery } from "@apollo/client";
+import { gql, useQuery, useLazyQuery } from "@apollo/client";
 
 const query = gql`
 query search($ingr: String) {
@@ -41,12 +41,10 @@ const foodItems = [
 export default function App() {
   const [search, setSearch] = useState("");
 
-  const { data, loading, error } = useQuery(query, {
-    variables: { ingr: "pizza" },
-  });
+  const [runSearch , { data, loading, error }] = useLazyQuery(query);
 
   const performSearch = () => {
-    console.warn("Searching for:", search);
+    runSearch({variables: { ingr: search }});
     setSearch("");
   };
 
@@ -58,8 +56,6 @@ export default function App() {
     return <Text>Failed to search</Text>
   }
 
-  console.log(JSON.stringify(data));
-
   return (
     <View style={styles.container}>
       <TextInput
@@ -70,9 +66,11 @@ export default function App() {
       />
       {search && <Button title="Search" onPress={performSearch} />}
 
+      {loading && <ActivityIndicator />}
       <FlatList
-        data={data.search.hints}
+        data={data?.search?.hints || []}
         renderItem={({ item }) => <FoodListItem item={item} />}
+        ListEmptyComponent={() => <Text>Search a food</Text>}
         contentContainerStyle={{ gap: 5 }}
       />
     </View>
